@@ -19,3 +19,10 @@ In vscode make sure to:
 -> ctrl + shift + p 
 -> python interpreter 
 -> select the conda environment
+
+---Commit And Push To Github On Linux---
+
+Github desktop has slow stage times so by committing
+changes in vscode you can greatly increase the
+speed of the git commit then push to origin
+using github desktop.
