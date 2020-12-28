@@ -1,44 +1,96 @@
 """
     Genome Analysis Project
 """
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import plotly.express as px
+import pandas as pd
 
+from dash.dependencies import Input, Output
 from string import digits
 from Bio.Seq import Seq
+import re
+import random
 
+""" 
+    During transcription, the RNA polymerase read the template DNA strand in the 3′→5′ direction, but the mRNA is formed in the 5′ to 3′ direction.
+    The codons of the mRNA reading frame are translated in the 5′→3′ direction into amino acids by a ribosome to produce a polypeptide chain.  
 
-# Hepatitis delta virus isolate GZ37, complete genome
+    for graphs use plotly or seaborn
 
-hepdRaw = """1 catgagccac catccgaacg aagattgcgc gaggggcggg atcagcgccc gagaggggta
-       61 agtggtaaag agcattggaa cgtcggagaa actactccca agaaggaaaa aagagaaagc
-      121 aagaatcgga cgagttcccc aagacgctgg gaacgtctcg gaaggggaaa gaaggaaggt
-      181 gggaaagaaa ggggcgggcc tcccgatccg aggggcccaa ccaccaagtt tggagagcac
-      241 tccggcccca agggttgaga gtacccagaa ggaggaatcc tctcggagaa aagcagataa
-      301 atcacctcca gaggacccct tcagcgaaca aaggagctct gaagcgcgag gagtaagagc
-      361 atagcgatag ggggagatgc taggagttag gggagaccga agcgaggagg aaagcaaaga
-      421 aagcaacggg gctagccggt aggtgttccg cctcccgaga ggggacgagt gaggcttatc
-      481 ccggggaact cggcgaatcg ttcccacata gcagacccca ggaccccctt ccaaatggtc
-      541 cgaggggggt ggctaggaac acaggggacc ggtggagcca tgggatgctc ctcccgatgt
-      601 ccgaatccat ccctcccccc gagggtcgcc caggaatggc gggaccccac tcaactgggg
-      661 tccgcgttcc atcctttctt acctgatggc cggcatggtc ccagcctcct cgctggcgcc
-      721 ggctgggcaa cattccgagg ggaccgtccc tcggtaatgg cgaatgggac ccagaaatct
-      781 ctctagattc ccagagagaa tcgagagaaa actggctctc ccttagccat ccgagtggac
-      841 gttcgtcctc cttcggatgc ccaggtcgga ccgcgaggag gtggagatgc catgccgacc
-      901 cgaagaggaa agaaggacgc gagacacgaa cccgtgagtg gaaacccgct ttattcactg
-      961 gggtcgacaa ctctggggag aaaagggagg atcggctggg aagagtatat cctatgggaa
-     1021 tccccggtct ccccttatgt ccagcccctc cccggtcctg gtgaaggggg actccggaat
-     1081 tccttgcatg ccgggaacga agccgccccc gggcgctccc ctcgatccac cttcgagggg
-     1141 gttcacacct ccaaccggcg ggccggctac tcttctttcc cttctctcgt cttcctcggt
-     1201 caacctctta agttcctctt cttcctcctt gctgagcttc ttccctccgg cactcagctg
-     1261 cttccttttg ttctcgaggg ccttccttcg tcggtgatcc tgcctctcct tgtcggagaa
-     1321 ccctcctctg agaggcctct tcctaggtcc ggagtctacc tccatctggt ctgttcgggc
-     1381 cctcttcgcc gggggagccc cctctccatc cttatccttc tttccgagaa ttcctttgat
-     1441 gtttcccagc cagggatttt cgtcctcaag tttcttgatt ttcttcttaa ccttccggag
-     1501 gtctctctcg agttcctcta acttctttct tccactcacc cactgctcga gaacctcttc
-     1561 cctgcccccg cgatttttct tcgattcgga gcggctcatc tcgacaagag gcggggctcc
-     1621 ctagttctct tactcttttc tgtaaagagg agactgtggg agtccccgcc caagttcgag """
+    Show content of each nucleotide for coding, template and mRNA strand, GC content
+    Percent expected mutations
+    Expected amino acide chain -> create 3d structure?
 
-hepdParsed  = hepdRaw.translate(str.maketrans('', '', digits)).replace(' ', '').upper()
-hepd_seq = Seq(hepdParsed)
+    ~10−3 per generation for satellite DNA expansion/contraction
+    human genome mutation rate is similarly estimated to be ~1.1×10−8 per site per generation
 
-print(hepd_seq.count("A"))
-print(hepd_seq.complement())
+    http://prody.csb.pitt.edu/
+"""
+rand_input = "".join([random.choice(['A', 'T', 'C', 'G']) for _ in range(25)])
+print(rand_input)
+
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
+app.layout = html.Div(children=[
+    
+    dcc.Input(id="text", type="text", placeholder="enter coding strand", value=''),
+
+    dcc.Graph(id="bar-chart-coding"),
+    dcc.Graph(id="bar-chart-template"),
+    dcc.Graph(id="bar-chart-mRNA"),
+    html.H4("Amino Acid Sequence: "),
+    html.Div(id='output'),
+])
+
+@app.callback(
+    Output('bar-chart-coding', 'figure'),
+    Output('bar-chart-template', 'figure'),
+    Output('bar-chart-mRNA', 'figure'),
+    Output('output', 'children'),
+    Input('text', 'value')
+)
+def update_graph (text_input):
+    text_input = text_input.upper()
+    if len(re.findall("[^ATCG]+", text_input)) > 0:
+        text_input = ""
+
+    coding_strand = Seq(text_input)
+    template_strand = coding_strand.complement()
+    mRNA = coding_strand.transcribe()
+    amino_acid_sequence = mRNA.translate()
+
+    coding_strand_counts = [coding_strand.count('A'), coding_strand.count('T'), coding_strand.count('C'), coding_strand.count('G')]
+    template_strand_counts = [template_strand.count('A'), template_strand.count('T'), template_strand.count('C'), template_strand.count('G')]
+    mRNA_strand_counts = [mRNA.count('A'), mRNA.count('U'), mRNA.count('C'), mRNA.count('G')]
+
+    coding_strand_data = {'Base': ['A','T','C','G'],
+                        'Count': coding_strand_counts
+                        }
+    template_strand_data = {'Base': ['A','T','C','G'],
+                        'Count': template_strand_counts
+                        }
+    mRNA_strand_data = {'Base': ['A','U','C','G'],
+                        'Count': mRNA_strand_counts
+                        }
+
+    coding_strand_df = pd.DataFrame(coding_strand_data, columns = ['Base','Count'])
+    template_strand_df = pd.DataFrame(template_strand_data, columns = ['Base','Count'])
+    mRNA_strand_df = pd.DataFrame(mRNA_strand_data, columns = ['Base','Count'])
+
+    return px.bar(coding_strand_df, x='Base', y='Count', color='Base', color_discrete_map={'A':'lightcyan',
+                'T':'cyan',
+                'C':'royalblue',
+                'G':'darkblue'}, title='Coding Strand'), px.bar(template_strand_df, x='Base', y='Count', color='Base', color_discrete_map={'A':'lightcyan',
+                'T':'cyan',
+                'C':'royalblue',
+                'G':'darkblue'}, title='Template Strand'), px.bar(mRNA_strand_df, x='Base', y='Count', color='Base', color_discrete_map={'A':'lightcyan',
+                'U':'cyan',
+                'C':'royalblue',
+                'G':'darkblue'}, title='mRNA Strand'), f"{amino_acid_sequence}"
+
+if __name__ == '__main__':
+    app.run_server(debug=True)
