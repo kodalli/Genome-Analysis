@@ -25,9 +25,6 @@ jupyter-core==4.7.0
 lazy-object-proxy==1.4.3
 MarkupSafe==1.1.1
 mccabe==0.6.1
-mkl-fft==1.2.0
-mkl-random==1.1.1
-mkl-service==2.3.0
 numpy==1.19.4
 pandas==1.1.5
 plotly==4.14.1
