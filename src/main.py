@@ -7,11 +7,12 @@ import dash_html_components as html
 import plotly.express as px
 import pandas as pd
 import dash_bootstrap_components as dbc
+import re
 
 from dash.dependencies import Input, Output
 from string import digits
 from Bio.Seq import Seq
-import re
+
 
 """ 
     During transcription, the RNA polymerase read the template DNA strand in the 3′→5′ direction, but the mRNA is formed in the 5′ to 3′ direction.
