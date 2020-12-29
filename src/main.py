@@ -6,12 +6,12 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
 import pandas as pd
+import dash_bootstrap_components as dbc
 
 from dash.dependencies import Input, Output
 from string import digits
 from Bio.Seq import Seq
 import re
-import random
 
 """ 
     During transcription, the RNA polymerase read the template DNA strand in the 3′→5′ direction, but the mRNA is formed in the 5′ to 3′ direction.
@@ -28,20 +28,27 @@ import random
 
     http://prody.csb.pitt.edu/
 """
-rand_input = "".join([random.choice(['A', 'T', 'C', 'G']) for _ in range(25)])
-print(rand_input)
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = [dbc.themes.CYBORG]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
+colors = {
+    'background': '#040404',
+    'text': '#7FDBFF'
+}
+
 app.layout = html.Div(children=[
     
-    dcc.Input(id="text", type="text", placeholder="enter coding strand", value=''),
+    dbc.Row(dbc.Col(dcc.Input(id="text", type="text", placeholder="enter coding strand", value=''), width={'size':6, "offset":0, 'order':1}),
+    ),
 
-    dcc.Graph(id="bar-chart-coding"),
-    dcc.Graph(id="bar-chart-template"),
-    dcc.Graph(id="bar-chart-mRNA"),
+
+    dbc.Row([dbc.Col(dcc.Graph(id="bar-chart-coding"), width={'size':3, "offset":0, 'order':0}),
+    dbc.Col(dcc.Graph(id="bar-chart-template"), width={'size':3, "offset":0, 'order':1}),
+    dbc.Col(dcc.Graph(id="bar-chart-mRNA"), width={'size':3, "offset":0, 'order':2}),]
+    ),
+    
     html.H4("Amino Acid Sequence: "),
     html.Div(id='output'),
 ])
@@ -81,16 +88,36 @@ def update_graph (text_input):
     template_strand_df = pd.DataFrame(template_strand_data, columns = ['Base','Count'])
     mRNA_strand_df = pd.DataFrame(mRNA_strand_data, columns = ['Base','Count'])
 
-    return px.bar(coding_strand_df, x='Base', y='Count', color='Base', color_discrete_map={'A':'lightcyan',
+    coding_strand_fig = px.bar(coding_strand_df, x='Base', y='Count', color='Base', color_discrete_map={'A':'lightcyan',
                 'T':'cyan',
                 'C':'royalblue',
-                'G':'darkblue'}, title='Coding Strand'), px.bar(template_strand_df, x='Base', y='Count', color='Base', color_discrete_map={'A':'lightcyan',
+                'G':'darkblue'}, title='Coding Strand')
+    template_strand_fig = px.bar(template_strand_df, x='Base', y='Count', color='Base', color_discrete_map={'A':'lightcyan',
                 'T':'cyan',
                 'C':'royalblue',
-                'G':'darkblue'}, title='Template Strand'), px.bar(mRNA_strand_df, x='Base', y='Count', color='Base', color_discrete_map={'A':'lightcyan',
+                'G':'darkblue'}, title='Template Strand')
+    mRNA_strand_fig = px.bar(mRNA_strand_df, x='Base', y='Count', color='Base', color_discrete_map={'A':'lightcyan',
                 'U':'cyan',
                 'C':'royalblue',
-                'G':'darkblue'}, title='mRNA Strand'), f"{amino_acid_sequence}"
+                'G':'darkblue'}, title='mRNA Strand')
+
+    coding_strand_fig.update_layout(
+    plot_bgcolor=colors['background'],
+    paper_bgcolor=colors['background'],
+    font_color=colors['text']
+        )
+    template_strand_fig.update_layout(
+        plot_bgcolor=colors['background'],
+        paper_bgcolor=colors['background'],
+        font_color=colors['text']
+        )
+    mRNA_strand_fig.update_layout(
+        plot_bgcolor=colors['background'],
+        paper_bgcolor=colors['background'],
+        font_color=colors['text']
+        )
+
+    return coding_strand_fig, template_strand_fig, mRNA_strand_fig, f"{amino_acid_sequence}"
 
 if __name__ == '__main__':
     app.run_server(debug=True)
